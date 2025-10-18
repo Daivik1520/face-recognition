@@ -44,17 +44,19 @@ class DetectedFace:
 class FaceDetector:
     """Face detection using InsightFace RetinaFace."""
 
-    def __init__(self, use_gpu: bool = True):
+    def __init__(self, use_gpu: bool = True, enable_preprocessing: bool = True):
         """Initialize detector.
 
         Args:
             use_gpu: Whether to use GPU acceleration
+            enable_preprocessing: Enable image preprocessing for long-range detection
         """
         self.use_gpu = use_gpu
+        self.enable_preprocessing = enable_preprocessing
         self.model: Optional[FaceAnalysis] = None
         self._initialized = False
 
-        logger.info(f"FaceDetector initialized (GPU: {use_gpu})")
+        logger.info(f"FaceDetector initialized (GPU: {use_gpu}, Preprocessing: {enable_preprocessing})")
 
     def _lazy_load(self) -> None:
         """Lazy load model on first use."""
@@ -96,8 +98,19 @@ class FaceDetector:
             logger.warning("Empty image provided to detect()")
             return []
 
+        # Apply preprocessing for long-range detection if enabled
+        processed_image = image
+        if self.enable_preprocessing:
+            try:
+                from src.preprocessing import preprocess_pipeline
+                processed_image = preprocess_pipeline(image, preset="balanced")
+                logger.debug("Applied preprocessing for long-range detection")
+            except Exception as e:
+                logger.warning(f"Preprocessing failed, using original image: {e}")
+                processed_image = image
+
         # Run detection
-        faces = self.model.get(image)
+        faces = self.model.get(processed_image)
 
         results = []
         for face in faces:

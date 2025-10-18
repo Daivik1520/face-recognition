@@ -647,15 +647,55 @@ def _render_ui() -> str:
             const API_BASE = '/api';
             let video, canvas, ctx;
             let recognitionInterval;
+            let cameraPermissionGranted = false;
+            
+            async function requestCameraPermission() {
+                // Check if we're on a mobile device or non-localhost
+                const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                const isNonLocalhost = !window.location.hostname.match(/^(localhost|127\.0\.0\.1|::1)$/);
+                
+                // Only show prompt for mobile or non-localhost access
+                if ((isMobile || isNonLocalhost) && !cameraPermissionGranted) {
+                    const userConfirmed = confirm(
+                        "📷 Camera Access Request\\n\\n" +
+                        "This application needs camera access for face recognition.\\n\\n" +
+                        "Note: Camera may not work on non-HTTPS connections. " +
+                        "You can use the 'Upload & Offline Recognition' feature below as an alternative.\\n\\n" +
+                        "Do you want to try enabling the camera?"
+                    );
+                    
+                    if (!userConfirmed) {
+                        document.getElementById('webcamResult').innerHTML = 
+                            '<div class="info">Camera access skipped. Please use the Upload & Offline Recognition section below to process images.</div>';
+                        return false;
+                    }
+                }
+                return true;
+            }
+            
             async function initWebcam() {
                 video = document.getElementById('video');
                 canvas = document.getElementById('canvas');
                 ctx = canvas.getContext('2d');
+                
+                // Request permission first
+                const permissionGranted = await requestCameraPermission();
+                if (!permissionGranted) {
+                    return;
+                }
+                
                 try {
                     const stream = await navigator.mediaDevices.getUserMedia({ video: true });
                     video.srcObject = stream;
+                    cameraPermissionGranted = true;
                 } catch (err) {
-                    document.getElementById('webcamResult').innerHTML = '<div class="error">Camera access denied</div>';
+                    const errorMsg = err.name === 'NotAllowedError' 
+                        ? 'Camera access denied by user. Please use the Upload & Offline Recognition section below.'
+                        : err.name === 'NotFoundError'
+                        ? 'No camera found on this device. Please use the Upload & Offline Recognition section below.'
+                        : 'Camera access failed. This may be due to non-HTTPS connection. Please use the Upload & Offline Recognition section below.';
+                    
+                    document.getElementById('webcamResult').innerHTML = `<div class="error">${errorMsg}</div>`;
                 }
             }
             function updateHeroMetrics(data) {

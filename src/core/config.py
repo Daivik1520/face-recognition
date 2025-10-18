@@ -18,7 +18,8 @@ class Settings(BaseSettings):
 
     # Detection Settings
     detection_model: str = "antelopev2"
-    det_size: tuple[int, int] = (640, 640)
+    det_size_width: int = 640
+    det_size_height: int = 640
     det_thresh: float = 0.5
 
     # Recognition Settings
@@ -29,6 +30,11 @@ class Settings(BaseSettings):
 
     # Quality Filter Settings
     min_face_size: int = 60
+    
+    @property
+    def det_size(self) -> tuple[int, int]:
+        """Return detection size as tuple for compatibility."""
+        return (self.det_size_width, self.det_size_height)
     blur_threshold: float = 100.0
     max_yaw: float = 45.0
     max_pitch: float = 30.0
