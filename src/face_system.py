@@ -10,10 +10,11 @@ import cv2
 from insightface.app import FaceAnalysis
 import csv
 from datetime import datetime, date
+from src.augmentation import FaceAugmentation, AugmentationConfig
 
 
 class FaceRecognitionSystem:
-    def __init__(self):
+    def __init__(self, enable_augmentation: bool = True, augmentation_preset: str = "balanced"):
         # Initialize InsightFace with high-quality settings
         self.app = FaceAnalysis(
             providers=['CPUExecutionProvider'],
@@ -36,6 +37,14 @@ class FaceRecognitionSystem:
         # Enhanced matching parameters
         self.min_embedding_quality = 0.2  # Minimum face quality for enrollment (lowered)
         self.max_embeddings_per_person = 20  # Store more embeddings for better accuracy
+        
+        # Augmentation system
+        self.enable_augmentation = enable_augmentation
+        self.augmentation_preset = augmentation_preset
+        self.augmentor = FaceAugmentation(
+            save_augmented=True,
+            output_dir="data/augmented"
+        )
         
         # Load existing embeddings
         self.load_embeddings()
@@ -179,6 +188,125 @@ class FaceRecognitionSystem:
             'success': successful_enrollments > 0,
             'enrolled_count': successful_enrollments,
             'total_embeddings': len(self.embeddings_db.get(name, [])),
+            'avg_quality': avg_quality
+        }
+    
+    def enroll_with_augmentation(
+        self,
+        name: str,
+        image: np.ndarray,
+        augmentation_config: Optional[Dict] = None
+    ) -> Dict:
+        """
+        Enroll a person with augmented images for improved robustness.
+        
+        This method generates multiple augmented versions of the input image
+        (lighting variations, crops, rotations, blur, noise) and trains the
+        model on all variations to handle diverse real-world conditions.
+        
+        Args:
+            name: Person's name
+            image: Original face image
+            augmentation_config: Custom augmentation parameters, or None to use preset
+            
+        Returns:
+            Dictionary with enrollment statistics
+        """
+        if not self.enable_augmentation:
+            # Fall back to standard enrollment
+            success = self.enroll_person(name, image)
+            return {
+                'success': success,
+                'enrolled_count': 1 if success else 0,
+                'total_embeddings': len(self.embeddings_db.get(name, [])),
+                'augmented_count': 0,
+                'avg_quality': self.embeddings_db[name][-1]['quality_score'] if success else 0.0
+            }
+        
+        # Get augmentation parameters
+        if augmentation_config is None:
+            augmentation_config = AugmentationConfig.get_preset(self.augmentation_preset)
+        
+        # Generate augmented images
+        augmented_images = self.augmentor.augment_for_enrollment(
+            image,
+            name,
+            **augmentation_config
+        )
+        
+        # Enroll all augmented images
+        successful_enrollments = 0
+        total_quality = 0.0
+        
+        for aug_image in augmented_images:
+            if self.enroll_person(name, aug_image):
+                successful_enrollments += 1
+                # Get the quality of the last enrolled embedding
+                if name in self.embeddings_db and self.embeddings_db[name]:
+                    total_quality += self.embeddings_db[name][-1]['quality_score']
+        
+        avg_quality = total_quality / successful_enrollments if successful_enrollments > 0 else 0.0
+        
+        return {
+            'success': successful_enrollments > 0,
+            'enrolled_count': successful_enrollments,
+            'total_embeddings': len(self.embeddings_db.get(name, [])),
+            'augmented_count': len(augmented_images),
+            'original_count': 1,
+            'avg_quality': avg_quality
+        }
+    
+    def enroll_multiple_with_augmentation(
+        self,
+        name: str,
+        images: List[np.ndarray],
+        augmentation_config: Optional[Dict] = None
+    ) -> Dict:
+        """
+        Enroll person from multiple images with augmentation on each.
+        
+        Args:
+            name: Person's name
+            images: List of original face images
+            augmentation_config: Custom augmentation parameters, or None to use preset
+            
+        Returns:
+            Dictionary with enrollment statistics
+        """
+        if not self.enable_augmentation:
+            # Fall back to standard multi-image enrollment
+            return self.enroll_multiple_images(name, images)
+        
+        # Get augmentation parameters
+        if augmentation_config is None:
+            augmentation_config = AugmentationConfig.get_preset(self.augmentation_preset)
+        
+        # Generate augmented images for all input images
+        all_augmented = self.augmentor.augment_batch(
+            images,
+            name,
+            augment_per_image=5  # Fewer augmentations per image when multiple images
+        )
+        
+        # Enroll all augmented images
+        successful_enrollments = 0
+        total_quality = 0.0
+        
+        for aug_image in all_augmented:
+            if self.enroll_person(name, aug_image):
+                successful_enrollments += 1
+                # Get the quality of the last enrolled embedding
+                if name in self.embeddings_db and self.embeddings_db[name]:
+                    total_quality += self.embeddings_db[name][-1]['quality_score']
+        
+        avg_quality = total_quality / successful_enrollments if successful_enrollments > 0 else 0.0
+        
+        return {
+            'success': successful_enrollments > 0,
+            'enrolled_count': successful_enrollments,
+            'total_embeddings': len(self.embeddings_db.get(name, [])),
+            'augmented_count': len(all_augmented),
+            'original_count': len(images),
             'avg_quality': avg_quality
         }
     
