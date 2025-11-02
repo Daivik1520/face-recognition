@@ -1,10 +1,7 @@
 <div align="center">
 
 <!-- Animated Header -->
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=24&height=300&section=header&text=Face%20Recognition&fontSize=70&fontColor=ffffff&animation=fadeIn&fontAlignY=38&desc=AI-Powered%20Attendance%20%26%20Security%20System&descAlignY=51&descAlign=50">
-  <img alt="Face Recognition Header" src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=24&height=300&section=header&text=Face%20Recognition&fontSize=70&fontColor=ffffff&animation=fadeIn&fontAlignY=38&desc=AI-Powered%20Attendance%20%26%20Security%20System&descAlignY=51&descAlign=50">
-</picture>
+<img src="https://capsule-render.vercel.app/api?type=waving&color=0:00D9FF,100:0080FF&height=300&section=header&text=Face%20Recognition&fontSize=70&fontColor=ffffff&animation=fadeIn&fontAlignY=38&desc=AI-Powered%20Attendance%20%26%20Security%20System&descAlignY=51&descAlign=50" alt="Face Recognition Header">
 
 <p align="center">
   <img src="https://readme-typing-svg.herokuapp.com?font=Fira+Code&pause=1000&color=00D9FF&center=true&vCenter=true&width=500&lines=🎯+95%25+Recognition+Accuracy;⚡+Real-time+Face+Detection;📊+Advanced+Analytics+Dashboard;🔒+Privacy-First+Security;🚀+Production+Ready+System" alt="Typing SVG" />
@@ -1101,7 +1098,7 @@ Conditions: ⚠️ License and copyright notice
 <div align="center">
 
 <!-- Animated Footer -->
-<img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=24&height=200&section=footer&fontSize=20&fontColor=ffffff&animation=fadeIn">
+<img src="https://capsule-render.vercel.app/api?type=waving&color=0:00D9FF,100:0080FF&height=200&section=footer&fontSize=20&fontColor=ffffff&animation=fadeIn" alt="Footer">
 
 ### **🌟 Show Your Support**
 
